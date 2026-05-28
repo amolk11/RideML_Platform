@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environment
+venv/
+.env/
+
+# Logs
+logs/
+*.log
+
+# ML
+mlruns/
+artifacts/
+models/
+
+# DVC
+/data/raw/
+data/processed/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Testing
+.pytest_cache/
+
+# Build
+dist/
+build/
+*.egg-info/
