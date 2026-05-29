@@ -20,10 +20,10 @@ SERVICE_DATA_FEATURES_DIR.mkdir(parents=True, exist_ok=True)
 
 # Logs and models
 LOG_DIR = SERVICE_DIR / "logs"
-MODEL_DIR = SERVICE_DIR / "models"
+SERVICE_MODELS_DIR = (SERVICE_DIR / "models")
 
 # Create directories
 SERVICE_DATA_RAW_DIR.mkdir(parents=True, exist_ok=True)
 SERVICE_DATA_PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 LOG_DIR.mkdir(parents=True, exist_ok=True)
-MODEL_DIR.mkdir(parents=True, exist_ok=True)
+SERVICE_MODELS_DIR.mkdir(parents=True, exist_ok=True)
