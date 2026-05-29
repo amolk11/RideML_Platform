@@ -1,0 +1,12 @@
+stages:
+  data_ingestion:
+    cmd: python -m src.data.data_ingestion
+    
+    deps:
+      - src/data/data_ingestion.py
+      - src/utils/logger.py
+      - src/utils/paths.py
+      - ../../data/raw/rides.csv
+
+    outs:
+      - data/raw/rides.csv

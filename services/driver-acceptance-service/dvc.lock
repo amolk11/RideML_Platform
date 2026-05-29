@@ -1,0 +1,26 @@
+schema: '2.0'
+stages:
+  data_ingestion:
+    cmd: python -m src.data.data_ingestion
+    deps:
+    - path: ../../data/raw/rides.csv
+      hash: md5
+      md5: c18a25c9317629290a6849d8d435d6a9
+      size: 15649927
+    - path: src/data/data_ingestion.py
+      hash: md5
+      md5: 9cf557727bce2cded48aba938a45fbfa
+      size: 1474
+    - path: src/utils/logger.py
+      hash: md5
+      md5: 32aa9c467c58f1e2f726abfa984de515
+      size: 903
+    - path: src/utils/paths.py
+      hash: md5
+      md5: 1eea107216ec6bf971c1fea26a2fb673
+      size: 736
+    outs:
+    - path: data/raw/rides.csv
+      hash: md5
+      md5: c18a25c9317629290a6849d8d435d6a9
+      size: 15649927
