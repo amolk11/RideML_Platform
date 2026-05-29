@@ -48,3 +48,12 @@ stages:
       - data/features/test.csv
     outs:
       - reports/evaluation_report.json
+
+  model_registration:
+    cmd: python -m src.model.model_registration
+    deps:
+      - src/model/model_registration.py
+      - params.yaml
+      - reports/evaluation_report.json
+    outs:
+      - models/model_metadata.json

@@ -2,6 +2,10 @@ feature_engineering:
   test_size: 0.2
   random_state: 42
 
+mlflow:
+  tracking_uri: http://ec2-16-171-45-136.eu-north-1.compute.amazonaws.com:5000
+  experiment_name: driver-acceptance-service
+
 model_building:
   learning_rate: 0.01
   n_estimators: 1000
@@ -13,3 +17,6 @@ model_building:
   reg_lambda: 0.0
   class_weight: balanced
   random_state: 42
+
+model_registration:
+  model_name: driver_acceptance_model
