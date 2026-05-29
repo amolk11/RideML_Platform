@@ -14,6 +14,10 @@ SERVICE_DATA_DIR = SERVICE_DIR / "data"
 SERVICE_DATA_RAW_DIR = SERVICE_DATA_DIR / "raw"
 SERVICE_DATA_PROCESSED_DIR = SERVICE_DATA_DIR / "processed"
 
+# Directory for features
+SERVICE_DATA_FEATURES_DIR = (SERVICE_DATA_DIR / "features")
+SERVICE_DATA_FEATURES_DIR.mkdir(parents=True, exist_ok=True)
+
 # Logs and models
 LOG_DIR = SERVICE_DIR / "logs"
 MODEL_DIR = SERVICE_DIR / "models"

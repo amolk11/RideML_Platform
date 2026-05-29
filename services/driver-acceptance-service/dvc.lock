@@ -17,8 +17,8 @@ stages:
       size: 903
     - path: src/utils/paths.py
       hash: md5
-      md5: 1eea107216ec6bf971c1fea26a2fb673
-      size: 736
+      md5: 418593a9530438e2948d92ebfa4ea949
+      size: 889
     outs:
     - path: data/raw/rides.csv
       hash: md5
@@ -40,3 +40,31 @@ stages:
       hash: md5
       md5: b6c285a47a47dd60c3add1c5a6c85b80
       size: 4633289
+  feature_engineering:
+    cmd: python -m src.features.feature_engineering
+    deps:
+    - path: data/processed/driver_acceptance_data.csv
+      hash: md5
+      md5: b6c285a47a47dd60c3add1c5a6c85b80
+      size: 4633289
+    - path: params.yaml
+      hash: md5
+      md5: 6e53ed0372b2e7ac099cbac9d8257954
+      size: 58
+    - path: src/features/feature_engineering.py
+      hash: md5
+      md5: 7118a91aa8e30f6de55607ebd36e3d02
+      size: 13041
+    - path: src/features/missing_value_imputer.py
+      hash: md5
+      md5: c85ebc9721f84c307d0d5d5fd35e9f7a
+      size: 2452
+    outs:
+    - path: data/features/test.csv
+      hash: md5
+      md5: 5b06e755980b174a7089a18910703bba
+      size: 1117422
+    - path: data/features/train.csv
+      hash: md5
+      md5: 300a124d5118586df2105593ad118e17
+      size: 4341797
