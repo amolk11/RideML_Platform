@@ -1,0 +1,15 @@
+feature_engineering:
+  test_size: 0.2
+  random_state: 42
+
+model_building:
+  learning_rate: 0.01
+  n_estimators: 1000
+  num_leaves: 31
+  min_child_samples: 20
+  subsample: 0.8
+  colsample_bytree: 0.8
+  reg_alpha: 0.0
+  reg_lambda: 0.0
+  class_weight: balanced
+  random_state: 42

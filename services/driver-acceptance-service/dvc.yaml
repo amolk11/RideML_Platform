@@ -1,0 +1,50 @@
+stages:
+  data_ingestion:
+    cmd: python -m src.data.data_ingestion
+    deps:
+      - src/data/data_ingestion.py
+      - src/utils/logger.py
+      - src/utils/paths.py
+      - ../../data/raw/rides.csv
+    outs:
+      - data/raw/rides.csv
+
+  data_preprocessing:
+    cmd: python -m src.data.data_preprocessing
+    deps:
+      - src/data/data_preprocessing.py
+      - data/raw/rides.csv
+    outs:
+      - data/processed/driver_acceptance_data.csv
+
+  feature_engineering:
+    cmd: python -m src.features.feature_engineering
+    deps:
+      - src/features/feature_engineering.py
+      - src/features/missing_value_imputer.py
+      - params.yaml
+      - data/processed/driver_acceptance_data.csv
+    outs:
+      - data/features/train.csv
+      - data/features/test.csv
+
+  model_building:
+    cmd: python -m src.model.model_building
+    deps:
+      - src/model/model_building.py
+      - params.yaml
+      - data/features/train.csv
+    outs:
+      - models/lightgbm_model.pkl
+      - models/run_info.json
+
+  model_evaluation:
+    cmd: python -m src.model.model_evaluation
+    deps:
+      - src/model/model_evaluation.py
+      - src/model/classification_evaluator.py
+      - models/lightgbm_model.pkl
+      - models/run_info.json
+      - data/features/test.csv
+    outs:
+      - reports/evaluation_report.json
