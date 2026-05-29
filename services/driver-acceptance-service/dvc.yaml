@@ -10,3 +10,13 @@ stages:
 
     outs:
       - data/raw/rides.csv
+
+  data_preprocessing:
+    cmd: python -m src.data.data_preprocessing
+
+    deps:
+      - src/data/data_preprocessing.py
+      - data/raw/rides.csv
+  
+    outs:
+      - data/processed/driver_acceptance_data.csv

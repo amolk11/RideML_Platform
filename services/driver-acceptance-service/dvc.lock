@@ -24,3 +24,19 @@ stages:
       hash: md5
       md5: c18a25c9317629290a6849d8d435d6a9
       size: 15649927
+  data_preprocessing:
+    cmd: python -m src.data.data_preprocessing
+    deps:
+    - path: data/raw/rides.csv
+      hash: md5
+      md5: c18a25c9317629290a6849d8d435d6a9
+      size: 15649927
+    - path: src/data/data_preprocessing.py
+      hash: md5
+      md5: 315d2561c39b215c6112bd69cc8a3271
+      size: 4486
+    outs:
+    - path: data/processed/driver_acceptance_data.csv
+      hash: md5
+      md5: b6c285a47a47dd60c3add1c5a6c85b80
+      size: 4633289
