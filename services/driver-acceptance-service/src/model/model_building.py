@@ -49,11 +49,6 @@ MODEL_FILE = (
     "lightgbm_model.pkl"
 )
 
-SCALER_FILE = (
-    SERVICE_MODELS_DIR /
-    "scaler.pkl"
-)
-
 RUN_INFO_FILE = (
     SERVICE_MODELS_DIR /
     "run_info.json"
@@ -181,50 +176,6 @@ def split_data(train_df: pd.DataFrame) -> tuple[
 
     return None, None, None, None
 
-
-# Standardize features
-def standardize_features(
-    X_train: pd.DataFrame,
-    X_val: pd.DataFrame
-) -> tuple[
-    Optional[pd.DataFrame],
-    Optional[pd.DataFrame]
-]:
-
-    try:
-        logger.info("Standardizing features...")
-
-        scaler = StandardScaler()
-
-        X_train_scaled = pd.DataFrame(scaler.fit_transform(X_train),columns=X_train.columns)
-        X_val_scaled = pd.DataFrame(scaler.transform(X_val),columns=X_val.columns)
-
-        logger.info(
-            "Feature standardization complete."
-        )
-
-        logger.info("Saving scaler...")
-
-        scaler_path = SERVICE_MODELS_DIR / "scaler.pkl"
-
-        with open(scaler_path, "wb") as f:
-            pickle.dump(scaler, f)
-
-        logger.info("Scaler saved successfully.")
-
-        return X_train_scaled, X_val_scaled
-
-    except PermissionError:
-        logger.exception(
-            "Permission denied while saving scaler."
-        )
-
-    except Exception:
-        logger.exception(
-            "Unexpected error during standardization."
-        )
-
-    return None, None
 
 
 # Train model
@@ -387,30 +338,14 @@ def main() -> None:
             )
             return
 
-        X_train_scaled, X_val_scaled = (
-            standardize_features(
-                X_train,
-                X_val
-            )
-        )
-
-        if (
-            X_train_scaled is None
-            or X_val_scaled is None
-        ):
-            logger.error(
-                "Feature standardization failed."
-            )
-            return
-
         with mlflow.start_run() as run:
 
             mlflow.log_params(params)
 
             model = train_model(
-                X_train_scaled,
+                X_train,
                 y_train,
-                X_val_scaled,
+                X_val,
                 y_val,
                 params
             )
@@ -422,11 +357,11 @@ def main() -> None:
                 return
 
             y_pred = model.predict(
-                X_val_scaled
+                X_val
             )
 
             y_proba = model.predict_proba(
-                X_val_scaled
+                X_val
             )[:, 1]
 
             accuracy = accuracy_score(
@@ -486,9 +421,6 @@ def main() -> None:
 
             save_model(model)
 
-            mlflow.log_artifact(
-                SERVICE_MODELS_DIR / "scaler.pkl"
-            )
 
             mlflow.log_artifact(
                 SERVICE_MODELS_DIR / "lightgbm_model.pkl"

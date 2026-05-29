@@ -1,60 +1,59 @@
-import numpy as np
-import pandas as pd
-import os
 import json
 import pickle
-import logging
 import mlflow
+import pandas as pd
 
-from typing import Optional, Any
-
-from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import (
     accuracy_score,
     precision_score,
     recall_score,
     f1_score,
-    roc_auc_score,
+    roc_auc_score
 )
 
-from classification_evaluator import ClassificationEvaluator
-
-
-# Logging configuration
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
-if not logger.handlers:
-
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.DEBUG)
-
-    file_handler = logging.FileHandler("error.log")
-    file_handler.setLevel(logging.ERROR)
-
-    formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    )
-
-    console_handler.setFormatter(formatter)
-    file_handler.setFormatter(formatter)
-
-    logger.addHandler(console_handler)
-    logger.addHandler(file_handler)
-
-
-# MLflow configuration
-mlflow.set_tracking_uri(
-    "http://ec2-16-16-216-150.eu-north-1.compute.amazonaws.com:5000"
+from src.model.classification_evaluator import (
+    ClassificationEvaluator
 )
 
-mlflow.set_experiment(
-    "ride-driver-acceptance"
+from src.utils.logger import get_logger
+from src.utils.paths import (
+    SERVICE_DATA_FEATURES_DIR,
+    SERVICE_MODELS_DIR,
+    REPORTS_DIR
+)
+
+logger = get_logger(
+    logger_name=__name__,
+    log_file="model_evaluation.log"
+)
+
+# MLflow Configuration
+mlflow.set_tracking_uri("http://ec2-16-171-45-136.eu-north-1.compute.amazonaws.com:5000")
+
+mlflow.set_experiment("driver-acceptance-service")
+
+MODEL_FILE = (
+    SERVICE_MODELS_DIR /
+    "lightgbm_model.pkl"
+)
+
+RUN_INFO_FILE = (
+    SERVICE_MODELS_DIR /
+    "run_info.json"
+)
+
+TEST_FILE = (
+    SERVICE_DATA_FEATURES_DIR /
+    "test.csv"
+)
+
+REPORT_FILE = (
+    REPORTS_DIR /
+    "evaluation_report.json"
 )
 
 
-# Load MLflow run ID
-def load_run_id() -> Optional[str]:
+def load_run_id() -> str:
 
     try:
 
@@ -62,15 +61,14 @@ def load_run_id() -> Optional[str]:
             "Loading MLflow run ID..."
         )
 
-        run_info_path = os.path.join(
-            "models",
-            "run_info.json"
-        )
-
-        with open(run_info_path, "r") as f:
+        with open(
+            RUN_INFO_FILE,
+            "r"
+        ) as f:
 
             run_info = json.load(f)
-            run_id = run_info["run_id"]
+
+        run_id = run_info["run_id"]
 
         logger.info(
             "Run ID loaded successfully."
@@ -81,123 +79,106 @@ def load_run_id() -> Optional[str]:
     except Exception:
 
         logger.exception(
-            "Error loading run ID."
+            "Failed to load run ID."
         )
 
-    return None
+        raise
 
 
-# Load model and scaler
-def load_model_and_scaler(
-    model_path: str,
-    scaler_path: str
-) -> tuple[
-    Optional[Any],
-    Optional[StandardScaler]
-]:
+def load_model():
 
     try:
 
         logger.info(
-            "Loading model and scaler..."
+            "Loading model..."
         )
 
-        with open(model_path, "rb") as f:
+        with open(
+            MODEL_FILE,
+            "rb"
+        ) as f:
+
             model = pickle.load(f)
 
-        with open(scaler_path, "rb") as f:
-            scaler = pickle.load(f)
-
         logger.info(
-            "Model and scaler loaded successfully."
+            "Model loaded successfully."
         )
 
-        return model, scaler
+        return model
 
     except Exception:
 
         logger.exception(
-            "Unexpected error while loading model/scaler."
+            "Failed to load model."
         )
 
-    return None, None
+        raise
 
 
-# Load validation data
-def load_validation_data(
-    val_path: str
-) -> Optional[pd.DataFrame]:
+def load_test_data():
 
     try:
 
         logger.info(
-            "Loading validation data..."
+            f"Loading test data from "
+            f"{TEST_FILE}"
         )
 
-        val_df = pd.read_csv(val_path)
+        test_df = pd.read_csv(
+            TEST_FILE
+        )
 
         logger.info(
-            "Validation data loaded successfully."
+            f"Test data loaded successfully. "
+            f"Shape: {test_df.shape}"
         )
 
-        return val_df
+        return test_df
 
     except Exception:
 
         logger.exception(
-            "Unexpected error while loading validation data."
+            "Failed to load test data."
         )
 
-    return None
+        raise
 
 
-# Prepare validation data
-def prepare_validation_data(
-    val_df: pd.DataFrame,
-    scaler: StandardScaler
-) -> tuple[
-    Optional[np.ndarray],
-    Optional[pd.Series]
-]:
+def prepare_test_data(
+    test_df: pd.DataFrame
+):
 
     try:
 
         logger.info(
-            "Preparing validation data..."
+            "Preparing test data..."
         )
 
-        X_val = val_df.drop(
-            columns=['target']
+        X_test = test_df.drop(
+            columns=["target"]
         )
 
-        y_val = val_df[
-            'target'
-        ]
-
-        X_val = scaler.transform(
-            X_val
-        )
+        y_test = test_df["target"]
 
         logger.info(
-            "Validation data preparation complete."
+            "Test data preparation completed."
         )
 
-        return X_val, y_val
+        return X_test, y_test
 
     except Exception:
 
         logger.exception(
-            "Unexpected error during validation preparation."
+            "Failed to prepare test data."
         )
 
-    return None, None
+        raise
 
 
-# Save evaluation report
 def save_evaluation_report(
-    evaluator: ClassificationEvaluator,
-    y_val: pd.Series
-) -> None:
+    evaluator,
+    y_test
+):
 
     try:
 
@@ -206,39 +187,42 @@ def save_evaluation_report(
         )
 
         report = {
+
             "accuracy": accuracy_score(
-                y_val,
+                y_test,
                 evaluator.y_pred
             ),
+
             "precision": precision_score(
-                y_val,
+                y_test,
                 evaluator.y_pred
             ),
+
             "recall": recall_score(
-                y_val,
+                y_test,
                 evaluator.y_pred
             ),
+
             "f1_score": f1_score(
-                y_val,
+                y_test,
                 evaluator.y_pred
             ),
+
             "roc_auc": roc_auc_score(
-                y_val,
+                y_test,
                 evaluator.y_prob
             )
         }
 
-        os.makedirs(
-            "reports",
+        REPORTS_DIR.mkdir(
+            parents=True,
             exist_ok=True
         )
 
-        output_path = os.path.join(
-            "reports",
-            "evaluation_report.json"
-        )
-
-        with open(output_path, "w") as f:
+        with open(
+            REPORT_FILE,
+            "w"
+        ) as f:
 
             json.dump(
                 report,
@@ -247,67 +231,40 @@ def save_evaluation_report(
             )
 
         logger.info(
-            "Evaluation report saved successfully."
+            f"Evaluation report saved at "
+            f"{REPORT_FILE}"
         )
+
+        return report
 
     except Exception:
 
         logger.exception(
-            "Unexpected error while saving evaluation report."
+            "Failed to save evaluation report."
         )
 
+        raise
 
-def main() -> None:
+
+def main():
 
     try:
 
+        logger.info(
+            "Model evaluation started."
+        )
+
         run_id = load_run_id()
 
-        if run_id is None:
+        model = load_model()
 
-            logger.error(
-                "Run ID loading failed."
+        test_df = load_test_data()
+
+        X_test, y_test = (
+            prepare_test_data(
+                test_df
             )
-
-            return
-
-        model, scaler = load_model_and_scaler(
-            "models/lightgbm_model.pkl",
-            "models/scaler.pkl"
         )
-
-        if model is None or scaler is None:
-
-            logger.error(
-                "Model/scaler loading failed."
-            )
-
-            return
-
-        val_df = load_validation_data(
-            "data/processed/test.csv"
-        )
-
-        if val_df is None:
-
-            logger.error(
-                "Validation data loading failed."
-            )
-
-            return
-
-        X_val, y_val = prepare_validation_data(
-            val_df,
-            scaler
-        )
-
-        if X_val is None or y_val is None:
-
-            logger.error(
-                "Validation data preparation failed."
-            )
-
-            return
 
         with mlflow.start_run(
             run_id=run_id
@@ -317,14 +274,12 @@ def main() -> None:
                 "Initializing evaluator..."
             )
 
-            evaluator = ClassificationEvaluator(
-                model,
-                X_val,
-                y_val
-            )
-
-            logger.info(
-                "Generating evaluation metrics..."
+            evaluator = (
+                ClassificationEvaluator(
+                    model,
+                    X_test,
+                    y_test
+                )
             )
 
             evaluator.basic_metrics()
@@ -335,74 +290,48 @@ def main() -> None:
 
             evaluator.threshold_analysis()
 
-            accuracy = accuracy_score(
-                y_val,
-                evaluator.y_pred
-            )
-
-            precision = precision_score(
-                y_val,
-                evaluator.y_pred
-            )
-
-            recall = recall_score(
-                y_val,
-                evaluator.y_pred
-            )
-
-            f1 = f1_score(
-                y_val,
-                evaluator.y_pred
-            )
-
-            roc_auc = roc_auc_score(
-                y_val,
-                evaluator.y_prob
-            )
-
-            mlflow.log_metric(
-                "accuracy",
-                accuracy
-            )
-
-            mlflow.log_metric(
-                "precision",
-                precision
-            )
-
-            mlflow.log_metric(
-                "recall",
-                recall
-            )
-
-            mlflow.log_metric(
-                "f1_score",
-                f1
-            )
-
-            mlflow.log_metric(
-                "roc_auc",
-                roc_auc
-            )
-
-            save_evaluation_report(
-                evaluator,
-                y_val
+            report = (
+                save_evaluation_report(
+                    evaluator,
+                    y_test
+                )
             )
 
             mlflow.log_artifact(
-                "reports/evaluation_report.json"
+                str(REPORT_FILE)
             )
 
             logger.info(
-                "Model evaluation pipeline completed successfully."
+                f"Accuracy  : {report['accuracy']:.4f}"
+            )
+
+            logger.info(
+                f"Precision : {report['precision']:.4f}"
+            )
+
+            logger.info(
+                f"Recall    : {report['recall']:.4f}"
+            )
+
+            logger.info(
+                f"F1 Score  : {report['f1_score']:.4f}"
+            )
+
+            logger.info(
+                f"ROC AUC   : {report['roc_auc']:.4f}"
+            )
+
+            logger.info(
+                "Model evaluation completed."
             )
 
     except Exception:
 
         logger.exception(
-            "Unexpected error in evaluation pipeline."
+            "Evaluation pipeline failed."
         )
+
+        raise
 
 
 if __name__ == "__main__":

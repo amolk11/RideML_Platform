@@ -36,5 +36,15 @@ stages:
       - data/features/train.csv
     outs:
       - models/lightgbm_model.pkl
-      - models/scaler.pkl
       - models/run_info.json
+
+  model_evaluation:
+    cmd: python -m src.model.model_evaluation
+    deps:
+      - src/model/model_evaluation.py
+      - src/model/classification_evaluator.py
+      - models/lightgbm_model.pkl
+      - models/run_info.json
+      - data/features/test.csv
+    outs:
+      - reports/evaluation_report.json
