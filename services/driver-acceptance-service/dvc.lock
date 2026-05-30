@@ -17,8 +17,8 @@ stages:
       size: 903
     - path: src/utils/paths.py
       hash: md5
-      md5: 55220b88231648671ad95fa3935dcec0
-      size: 1000
+      md5: a7faddda6146449f6b9e09978fcf7f35
+      size: 1125
     outs:
     - path: data/raw/rides.csv
       hash: md5
@@ -53,13 +53,17 @@ stages:
       size: 492
     - path: src/features/feature_engineering.py
       hash: md5
-      md5: 7118a91aa8e30f6de55607ebd36e3d02
-      size: 13041
+      md5: 147da226cebde373f4cc23b76b6894b9
+      size: 15662
     - path: src/features/missing_value_imputer.py
       hash: md5
       md5: c85ebc9721f84c307d0d5d5fd35e9f7a
       size: 2452
     outs:
+    - path: data/artifacts/feature_artifacts.json
+      hash: md5
+      md5: e8eaed1e791d8d7953cff998431ca253
+      size: 5232481
     - path: data/features/test.csv
       hash: md5
       md5: 5b06e755980b174a7089a18910703bba

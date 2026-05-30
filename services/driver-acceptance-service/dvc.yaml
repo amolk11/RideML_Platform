@@ -27,6 +27,7 @@ stages:
     outs:
       - data/features/train.csv
       - data/features/test.csv
+      - data/artifacts/feature_artifacts.json
 
   model_building:
     cmd: python -m src.model.model_building

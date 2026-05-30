@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import yaml
+import json
 
 from typing import Optional
 from sklearn.preprocessing import OrdinalEncoder
@@ -9,7 +10,8 @@ from sklearn.model_selection import train_test_split
 from src.utils.logger import get_logger
 from src.utils.paths import (
     SERVICE_DATA_PROCESSED_DIR,
-    SERVICE_DATA_FEATURES_DIR
+    SERVICE_DATA_FEATURES_DIR,
+    SERVICE_DATA_ARTIFACTS_DIR
 )
 
 from src.features.missing_value_imputer import (
@@ -36,6 +38,11 @@ TRAIN_FILE = (
 TEST_FILE = (
     SERVICE_DATA_FEATURES_DIR /
     "test.csv"
+)
+
+ARTIFACT_FILE = (
+    SERVICE_DATA_ARTIFACTS_DIR /
+    "feature_artifacts.json"
 )
 
 PARAMS_FILE = "params.yaml"
@@ -204,7 +211,7 @@ def handle_missing_values(train_df: pd.DataFrame, test_df: pd.DataFrame) -> tupl
 
         logger.info("Missing values handled successfully.")
 
-        return train_df, test_df
+        return train_df, test_df, imputer
 
     except KeyError:
         logger.exception("Required columns missing for imputation.")
@@ -243,7 +250,7 @@ def create_location_features(train_df: pd.DataFrame, test_df: pd.DataFrame) -> t
 
         logger.info("Location features created successfully.")
 
-        return train_df, test_df
+        return train_df, test_df, pickup_freq, drop_freq
 
     except KeyError:
         logger.exception("Pickup/Drop Location columns missing.")
@@ -314,7 +321,7 @@ def create_route_feature(
 
         logger.info("Route features created successfully.")
 
-        return train_df, test_df
+        return train_df, test_df, route_avg
 
     except KeyError:
         logger.exception("Required columns missing for route features.")
@@ -498,6 +505,102 @@ def save_engineered_data(
             "Unexpected error while saving data."
         )
         raise
+    
+def save_feature_artifacts(
+    train_df,
+    pickup_freq,
+    drop_freq,
+    route_avg,
+    imputer
+):
+
+    try:
+
+        SERVICE_DATA_ARTIFACTS_DIR.mkdir(
+            parents=True,
+            exist_ok=True
+        )
+
+        artifacts = {
+
+            "vehicle_mapping": {
+                "eBike": 0,
+                "Bike": 1,
+                "Auto": 2,
+                "Go Mini": 3,
+                "Go Sedan": 4,
+                "Premier Sedan": 5,
+                "Uber XL": 6
+            },
+
+            "pickup_freq":
+                pickup_freq.to_dict(),
+
+            "drop_freq":
+                drop_freq.to_dict(),
+
+            "route_avg_price":
+                route_avg.to_dict(),
+
+            "booking_value_median":
+                float(
+                    train_df["Booking Value"]
+                    .median()
+                ),
+            "imputer": {
+
+                "rv_median": {
+                    "|".join(map(str, k)): float(v)
+                    for k, v in
+                    imputer.rv_median.to_dict().items()
+                },
+
+                "route_mean": {
+                    str(k): float(v)
+                    for k, v in
+                    imputer.route_mean.to_dict().items()
+                },
+
+                "vehicle_scale": {
+                    str(k): float(v)
+                    for k, v in
+                    imputer.vehicle_scale.to_dict().items()
+                },
+
+                "v_median": {
+                    str(k): float(v)
+                    for k, v in
+                    imputer.v_median.to_dict().items()
+                },
+
+                "global_mean":
+                    float(
+                        imputer.global_mean
+                    )
+                }           
+        }
+
+        with open(
+            ARTIFACT_FILE,
+            "w"
+        ) as f:
+
+            json.dump(
+                artifacts,
+                f,
+                indent=4
+            )
+
+        logger.info(
+            f"Feature artifacts saved at "
+            f"{ARTIFACT_FILE.resolve()}"
+        )
+
+    except Exception:
+        logger.exception(
+            "Failed to save feature artifacts."
+        )
+        raise
 
 def main() -> None:
 
@@ -518,20 +621,22 @@ def main() -> None:
 
         train_df, test_df = split_data_into_train_test_data(df, params)
         
-        train_df, test_df = handle_missing_values(train_df, test_df)
+        train_df, test_df, imputer = handle_missing_values(train_df, test_df)
 
-        train_df, test_df = create_location_features(train_df, test_df)
+        train_df, test_df, pickup_freq, drop_freq = create_location_features(train_df, test_df)
 
-        train_df, test_df = create_route_feature(train_df, test_df)
+        train_df, test_df, route_avg = create_route_feature(train_df, test_df)
 
         train_df, test_df = feature_transformation(train_df, test_df)
 
         train_df, test_df = create_location_popularity_features(train_df, test_df)
 
+        save_feature_artifacts(train_df, pickup_freq, drop_freq, route_avg, imputer)
+        
         train_df, test_df = select_features(train_df, test_df)
 
         save_engineered_data(train_df, test_df)
-
+        
     except Exception:
         logger.exception("Unexpected error in feature engineering pipeline.")
 
